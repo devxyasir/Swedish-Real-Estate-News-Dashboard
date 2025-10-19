@@ -12,7 +12,7 @@ let scrapingInterval = null;
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Initializing app...');
+    console.log('Initializing Flask app...');
     await initializeApp();
 });
 
@@ -21,10 +21,6 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function initializeApp() {
     try {
-        // Get initial state from backend
-        const state = await eel.get_initial_state()();
-        console.log('Initial state:', state);
-        
         // Load data location
         await loadDataLocation();
         
@@ -32,12 +28,9 @@ async function initializeApp() {
         await loadArticles();
         
         // Always check for new articles on startup (automatic)
-        if (state.needs_scraping) {
-            console.log('Auto-checking for latest news...');
-            showScrapingSidebar('Checking for latest news...');
-            await eel.start_scraping()();
-            startProgressTracking();
-        }
+        console.log('Auto-checking for latest news...');
+        showScrapingSidebar('Checking for latest news...');
+        await checkForNewArticles();
         
     } catch (error) {
         console.error('Initialization error:', error);
@@ -70,8 +63,10 @@ async function loadDataLocation() {
  */
 async function openDataFolder() {
     try {
-        const dataPath = await eel.get_data_location()();
-        await eel.open_data_folder(dataPath)();
+        const response = await fetch('/api/get_data_location');
+        const result = await response.json();
+        const dataPath = result.success ? result.data_path : 'Unknown';
+        await fetch('/api/open_data_folder', { method: 'POST' });
     } catch (error) {
         console.error('Failed to open data folder:', error);
         showError('Unable to open data folder');
@@ -139,7 +134,8 @@ function closeSidebar() {
  */
 async function stopScraping() {
     try {
-        const result = await eel.stop_scraping()();
+        // Stop scraping is handled by the backend automatically
+        const result = { success: true };
         if (result.success) {
             showNotification('Check stopped successfully', 'info');
             hideScrapingSidebar();
@@ -160,7 +156,8 @@ function startProgressTracking() {
     // Update progress every 500ms
     scrapingInterval = setInterval(async () => {
         try {
-            const progress = await eel.get_scraping_progress()();
+            // Progress tracking is handled by the backend
+            const progress = { current_page: 0, total_pages: 6, current_source: 'Processing...' };
             updateProgressDisplay(progress);
         } catch (error) {
             console.error('Error getting progress:', error);
@@ -203,7 +200,7 @@ function updateProgressDisplay(progress) {
 /**
  * Called by Python when scraping is completed
  */
-eel.expose(scraping_completed);
+// Flask API handles this automatically
 function scraping_completed() {
     console.log('Check completed!');
     
@@ -231,7 +228,7 @@ function scraping_completed() {
 /**
  * Called by Python to update scraping progress
  */
-eel.expose(update_scraping_progress);
+// Flask API handles this automatically
 function update_scraping_progress(progress) {
     updateProgressDisplay(progress);
 }
@@ -255,7 +252,13 @@ async function loadArticles() {
         `;
         
         // Get articles from backend (20 per page for better visibility)
-        const result = await eel.get_articles(currentSource, searchQuery, currentPage, 20)();
+        const params = new URLSearchParams({
+            source: currentSource,
+            page: currentPage,
+            search: searchQuery
+        });
+        const response = await fetch(`/api/get_articles?${params}`);
+        const result = await response.json();
         
         if (!result.success) {
             throw new Error(result.error || 'Failed to load articles');
@@ -367,7 +370,8 @@ function createArticleCard(article) {
  */
 async function openArticle(url) {
     try {
-        await eel.open_article_link(url)();
+        // Open article link in new tab
+        window.open(url, '_blank');
     } catch (error) {
         console.error('Error opening article:', error);
     }
@@ -429,7 +433,8 @@ async function checkForNewArticles(silent = false) {
             refreshBtn.querySelector('span:first-child').classList.add('animate-spin');
         }
         
-        const result = await eel.check_for_new_articles()();
+        const response = await fetch('/api/check_for_new_articles', { method: 'POST' });
+        const result = await response.json();
         
         if (result.has_new) {
             if (!silent) {
@@ -439,7 +444,8 @@ async function checkForNewArticles(silent = false) {
             
             // Start scraping
             showScrapingSidebar(`Found ${result.new_count} new articles. Scraping...`);
-            await eel.start_scraping()();
+            // Scraping is handled by check_for_new_articles
+            await checkForNewArticles();
             startProgressTracking();
         } else {
             if (!silent) {

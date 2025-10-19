@@ -879,20 +879,18 @@ def create_app():
     """Create Flask application for PythonAnywhere"""
     global app
     if app is None:
-        from flask import Flask, jsonify, request
-        from flask_cors import CORS
+        from flask import Flask, send_from_directory, jsonify, request
         
         app = Flask(__name__, static_folder='web', static_url_path='')
-        CORS(app)
         
         # Flask routes
         @app.route('/')
         def index():
-            return app.send_static_file('index.html')
+            return send_from_directory('web', 'index.html')
         
-        @app.route('/<path:path>')
-        def static_files(path):
-            return app.send_static_file(path)
+        @app.route('/<path:filename>')
+        def static_files(filename):
+            return send_from_directory('web', filename)
         
         # API routes for Eel functions
         @app.route('/api/check_for_new_articles', methods=['POST'])

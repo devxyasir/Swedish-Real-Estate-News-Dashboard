@@ -1,24 +1,21 @@
 """
-WSGI configuration for PythonAnywhere deployment using Eel
+WSGI configuration for PythonAnywhere deployment
 This file is required for PythonAnywhere to serve the application
 """
 
-import sys
 import os
+import sys
 
 # Add the project directory to Python path
-project_dir = '/home/plazza12/Swedish-Real-Estate-News-Dashboard'
+project_dir = os.path.dirname(os.path.abspath(__file__))
 if project_dir not in sys.path:
     sys.path.append(project_dir)
 
-# Set environment variable
+# Set environment variable to indicate we're on PythonAnywhere
 os.environ['HTTP_HOST'] = 'plazza12.pythonanywhere.com'
 
-# Import Eel and create the application
-import eel
+# Import and create the Flask application
+from app import create_app
 
-# Initialize Eel
-eel.init('web')
-
-# Get the Flask app from Eel
-application = eel.app
+# Create the Flask app
+application = create_app()
