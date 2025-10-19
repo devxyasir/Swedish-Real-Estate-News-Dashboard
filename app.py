@@ -896,15 +896,9 @@ def create_app():
         @app.route('/api/check_for_new_articles', methods=['POST'])
         def api_check_for_new_articles():
             try:
-                # For PythonAnywhere, return a simple success response
-                # since external scraping is blocked by proxy
-                logger.info("Check for new articles requested (PythonAnywhere mode)")
-                return jsonify({
-                    'success': True,
-                    'has_new': False,
-                    'new_count': 0,
-                    'message': 'PythonAnywhere mode - external scraping disabled'
-                })
+                # Call the existing function for full scraping
+                result = check_for_new_articles()
+                return jsonify(result)
             except Exception as e:
                 logger.error(f"API error: {e}")
                 return jsonify({'success': False, 'error': str(e)})
