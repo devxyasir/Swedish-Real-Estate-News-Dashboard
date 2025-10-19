@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Real Estate News Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script type="text/javascript" src="/eel.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#19a1e6",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111c21",
+                    },
+                    fontFamily: {
+                        "display": ["Work Sans"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .loading-bar {
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Scraping sidebar panel */
+        #scraping-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        #scraping-panel.show {
+            right: 0;
+        }
+        
+        .dark #scraping-panel {
+            background: #111c21;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+
+<!-- Scraping Sidebar Panel -->
+<div id="scraping-panel">
+    <div class="p-6 h-full flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-[#0e171b] dark:text-white">
+                Checking for Latest News
+            </h2>
+            <button onclick="closeSidebar()" class="text-[#4e7f97] dark:text-gray-400 hover:text-[#0e171b] dark:hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        
+        <!-- Status Icon -->
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/20 rounded-full mb-4">
+                <span class="material-symbols-outlined text-primary text-4xl pulse-slow">download</span>
+            </div>
+            <h3 class="text-lg font-semibold text-[#0e171b] dark:text-white mb-2" id="loading-title">
+                Checking Latest Articles
+            </h3>
+            <p class="text-sm text-[#4e7f97] dark:text-gray-400" id="loading-message">
+                Checking page 1 for new news...
+            </p>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mb-6">
+            <div class="flex justify-between text-sm text-[#4e7f97] dark:text-gray-400 mb-2">
+                <span id="progress-text">Starting...</span>
+                <span id="progress-percentage">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                <div id="progress-bar" class="loading-bar bg-gradient-to-r from-primary to-blue-600 h-full rounded-full"></div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-background-light dark:bg-background-dark p-4 rounded-lg text-center border border-gray-200 dark:border-gray-700">
+                <p class="text-3xl font-bold text-primary" id="pages-scraped">0</p>
+                <p class="text-xs text-[#4e7f97] dark:text-gray-400 mt-1">Sources</p>
+            </div>
+            <div class="bg-background-light dark:bg-background-dark p-4 rounded-lg text-center border border-gray-200 dark:border-gray-700">
+                <p class="text-3xl font-bold text-primary" id="articles-scraped">0</p>
+                <p class="text-xs text-[#4e7f97] dark:text-gray-400 mt-1">New Articles</p>
+            </div>
+        </div>
+        
+        <!-- Stop Button -->
+        <button 
+            id="stop-scraping-btn"
+            onclick="stopScraping()"
+            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium">
+            <span class="material-symbols-outlined">stop_circle</span>
+            <span>Stop Check</span>
+        </button>
+        
+                        <!-- Info Note -->
+        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p class="text-xs text-blue-800 dark:text-blue-300">
+                <strong>Note:</strong> The app checks 6 sources: Fastighetsvarlden, Cision, Lokalguiden, DI, Fastighetsnytt, and Nordic Property News. 
+                Swedish titles are translated to English automatically.
+            </p>
+        </div>
+        
+        <!-- Data Location -->
+        <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <p class="text-xs font-semibold text-green-800 dark:text-green-300 mb-2">
+                📁 Data Location
+            </p>
+            <p id="data-location-path" class="text-xs text-green-700 dark:text-green-400 mb-3 font-mono break-all">
+                Loading...
+            </p>
+            <button 
+                onclick="openDataFolder()"
+                class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors">
+                <span class="material-symbols-outlined text-sm">folder_open</span>
+                <span>Open Data Folder</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+    <div class="layout-container flex h-full grow flex-col">
+        <div class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
+            <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+                
+                <!-- Header -->
+                <div class="flex flex-wrap justify-between gap-3 p-4">
+                    <div class="flex min-w-72 flex-col gap-3">
+                        <p class="text-[#0e171b] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                            Real Estate News Hub
+                        </p>
+                        <p class="text-[#4e7f97] dark:text-gray-400 text-base font-normal leading-normal">
+                            Your daily source for real estate news
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button 
+                            id="scraping-status-btn"
+                            onclick="toggleScrapingPanel()"
+                            class="flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-600 rounded-lg transition-colors"
+                            style="display: none;">
+                            <span id="scraping-icon" class="material-symbols-outlined animate-spin">sync</span>
+                            <span id="scraping-text" class="hidden sm:inline">Checking...</span>
+                        </button>
+                        <button 
+                            id="refresh-btn"
+                            onclick="checkForNewArticles()"
+                            class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                            <span class="material-symbols-outlined">refresh</span>
+                            <span class="hidden sm:inline">Check for New</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Website Tabs -->
+                <div class="flex gap-3 p-3 flex-wrap pr-4" id="website-tabs">
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="all"
+                        onclick="selectWebsite('all')">
+                        <p class="text-primary text-sm font-medium leading-normal">All Sources</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="fastighetsvarlden"
+                        onclick="selectWebsite('fastighetsvarlden')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">Fastighetsvarlden</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="cision"
+                        onclick="selectWebsite('cision')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">Cision</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="lokalguiden"
+                        onclick="selectWebsite('lokalguiden')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">Lokalguiden</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="di"
+                        onclick="selectWebsite('di')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">DI</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="fastighetsnytt"
+                        onclick="selectWebsite('fastighetsnytt')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">Fastighetsnytt</p>
+                    </div>
+                    <div 
+                        class="website-tab flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer pl-4 pr-4"
+                        data-source="nordicpropertynews"
+                        onclick="selectWebsite('nordicpropertynews')">
+                        <p class="text-[#0e171b] dark:text-white text-sm font-medium leading-normal">Nordic Property News</p>
+                    </div>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="px-4 py-3">
+                    <label class="flex flex-col min-w-40 h-12 w-full">
+                        <div class="flex w-full flex-1 items-stretch rounded-xl h-full">
+                            <div class="text-[#4e7f97] dark:text-gray-400 flex border-none bg-white dark:bg-background-dark items-center justify-center pl-4 rounded-l-xl border-r-0 shadow-sm">
+                                <span class="material-symbols-outlined">search</span>
+                            </div>
+                            <input 
+                                id="search-input"
+                                class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-xl text-[#0e171b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border-none bg-white dark:bg-background-dark h-full placeholder:text-[#4e7f97] dark:placeholder:text-gray-400 px-4 pl-2 text-base font-normal leading-normal shadow-sm" 
+                                placeholder="Search for articles..."
+                                onkeyup="searchArticles()"
+                            />
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Stats Bar -->
+                <div class="px-4 py-2">
+                    <div class="flex items-center justify-between text-sm text-[#4e7f97] dark:text-gray-400">
+                        <span id="article-count-text">Loading articles...</span>
+                        <span id="last-scrape-text"></span>
+                    </div>
+                </div>
+                
+                <!-- Articles List -->
+                <div class="flex flex-col gap-4 p-4" id="articles-container">
+                    <!-- Articles will be loaded here dynamically -->
+                    <div class="text-center text-[#4e7f97] dark:text-gray-400 py-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <p class="mt-4">Loading articles...</p>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="px-4 py-6 hidden" id="pagination-container">
+                    <div class="flex flex-col items-center gap-4">
+                        <!-- Page Info -->
+                        <div class="text-center">
+                            <p class="text-[#4e7f97] dark:text-gray-400 text-sm font-medium" id="page-info">Page 1 of 1</p>
+                        </div>
+                        
+                        <!-- Navigation Buttons -->
+                        <div class="flex flex-wrap items-center justify-center gap-3">
+                            <button 
+                                id="prev-page-btn"
+                                onclick="previousPage()"
+                                class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-background-dark border-2 border-gray-300 dark:border-gray-600 text-[#0e171b] dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 font-medium">
+                                <span class="material-symbols-outlined text-sm">chevron_left</span>
+                                <span>Previous</span>
+                            </button>
+                            
+                            <!-- Page Numbers Container -->
+                            <div id="page-numbers" class="flex items-center gap-2"></div>
+                            
+                            <button 
+                                id="next-page-btn"
+                                onclick="nextPage()"
+                                class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-gray-400 font-medium">
+                                <span>Next</span>
+                                <span class="material-symbols-outlined text-sm">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <footer class="flex flex-col gap-6 px-5 py-10 text-center @container">
+                    <a href="https://www.google.com/search?q=devxyasir" target="_blank" class="no-underline hover:no-underline">
+                        <p class="text-[#4e7f97] dark:text-gray-400 text-base font-medium leading-normal tracking-wide transition-all duration-300 hover:text-[#6faec9]">
+                          © 2024 <span class="font-semibold">devxyasir</span>. All rights reserved.
+                        </p>
+                      </a>
+                      
+                </footer>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
+
