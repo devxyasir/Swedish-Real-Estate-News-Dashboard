@@ -879,14 +879,11 @@ def create_app():
     """Create Flask application for PythonAnywhere"""
     global app
     if app is None:
-        from flask import Flask, render_template, jsonify, request
+        from flask import Flask, jsonify, request
         from flask_cors import CORS
         
         app = Flask(__name__, static_folder='web', static_url_path='')
         CORS(app)
-        
-        # Initialize Eel with the Flask app
-        eel.init('web')
         
         # Flask routes
         @app.route('/')

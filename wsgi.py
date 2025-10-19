@@ -11,12 +11,11 @@ project_dir = os.path.dirname(os.path.abspath(__file__))
 if project_dir not in sys.path:
     sys.path.append(project_dir)
 
-# Import the main application
-from app import app
+# Set environment variable to indicate we're on PythonAnywhere
+os.environ['HTTP_HOST'] = 'plazza12.pythonanywhere.com'
 
-# PythonAnywhere will look for 'application' variable
-application = app
+# Import and create the Flask application
+from app import create_app
 
-# Alternative: If you want to use the Eel app directly
-# from app import eel
-# application = eel.app
+# Create the Flask app
+application = create_app()
