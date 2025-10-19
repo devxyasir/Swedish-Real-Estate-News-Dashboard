@@ -852,17 +852,66 @@ def open_data_folder(folder_path):
         return {'success': False, 'error': str(e)}
 
 
+def find_available_port(start_port=8080, max_attempts=10):
+    """Find an available port starting from start_port"""
+    import socket
+    
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            # Try to bind to the port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('localhost', port))
+                logger.info(f"Found available port: {port}")
+                return port
+        except OSError:
+            logger.debug(f"Port {port} is in use, trying next...")
+            continue
+    
+    # If no port found, return None
+    logger.error(f"Could not find available port in range {start_port}-{start_port + max_attempts}")
+    return None
+
+
 def main():
     """Main application entry point"""
     try:
         logger.info("Starting Real Estate News Hub...")
         
-        # Start the Eel application
-        eel.start('index.html', size=(1200, 800), port=8080)
+        # Find an available port
+        port = find_available_port()
         
+        if port is None:
+            error_msg = "Could not find an available port. Please close other instances of the application."
+            logger.error(error_msg)
+            show_error_dialog("Port Error", error_msg)
+            return
+        
+        # Start the Eel application with the available port
+        logger.info(f"Starting application on port {port}")
+        eel.start('index.html', size=(1200, 800), port=port, mode='chrome-app', 
+                 close_callback=lambda *args: None, 
+                 cmdline_args=['--disable-web-security', '--disable-features=VizDisplayCompositor'])
+        
+    except KeyboardInterrupt:
+        logger.info("Application closed by user")
     except Exception as e:
         logger.error(f"Application error: {e}", exc_info=True)
-        input("Press Enter to exit...")
+        show_error_dialog("Application Error", f"An error occurred:\n\n{str(e)}")
+
+
+def show_error_dialog(title, message):
+    """Show error dialog (works in windowed mode)"""
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(title, message)
+        root.destroy()
+    except Exception as dialog_error:
+        # If tkinter not available or fails, just log
+        logger.error(f"Could not show error dialog: {dialog_error}")
+        pass
 
 
 if __name__ == "__main__":
