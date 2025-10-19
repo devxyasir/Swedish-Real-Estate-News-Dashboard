@@ -872,13 +872,88 @@ def find_available_port(start_port=8080, max_attempts=10):
     return None
 
 
+# Create Flask app for PythonAnywhere
+app = None
+
+def create_app():
+    """Create Flask application for PythonAnywhere"""
+    global app
+    if app is None:
+        from flask import Flask, render_template, jsonify, request
+        from flask_cors import CORS
+        
+        app = Flask(__name__, static_folder='web', static_url_path='')
+        CORS(app)
+        
+        # Initialize Eel with the Flask app
+        eel.init('web')
+        
+        # Flask routes
+        @app.route('/')
+        def index():
+            return app.send_static_file('index.html')
+        
+        @app.route('/<path:path>')
+        def static_files(path):
+            return app.send_static_file(path)
+        
+        # API routes for Eel functions
+        @app.route('/api/check_for_new_articles', methods=['POST'])
+        def api_check_for_new_articles():
+            try:
+                result = check_for_new_articles()
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"API error: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @app.route('/api/get_articles', methods=['GET'])
+        def api_get_articles():
+            try:
+                source = request.args.get('source', 'all')
+                page = int(request.args.get('page', 1))
+                search = request.args.get('search', '')
+                
+                result = get_articles(source, page, search)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"API error: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @app.route('/api/get_data_location', methods=['GET'])
+        def api_get_data_location():
+            try:
+                result = get_data_location()
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"API error: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @app.route('/api/open_data_folder', methods=['POST'])
+        def api_open_data_folder():
+            try:
+                result = open_data_folder()
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"API error: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+    
+    return app
+
+
 def main():
     """Main application entry point"""
     import os
     import sys
     
     try:
-        logger.info("Starting Real Estate News Hub Web Server...")
+        logger.info("Starting Real Estate News Hub...")
+        
+        # Check if running on PythonAnywhere
+        if 'pythonanywhere.com' in os.getenv('HTTP_HOST', ''):
+            logger.info("Detected PythonAnywhere environment")
+            # For PythonAnywhere, we'll use the Flask app
+            return create_app()
         
         # Get host and port from environment variables or use defaults
         host = os.getenv('HOST', '0.0.0.0')  # Bind to all interfaces for external access
@@ -913,7 +988,7 @@ def main():
         logger.info("Application closed by user")
     except Exception as e:
         logger.error(f"Application error: {e}", exc_info=True)
-        if mode == 'web':
+        if 'mode' in locals() and mode == 'web':
             logger.error("Server failed to start. Check if port is available.")
         else:
             show_error_dialog("Application Error", f"An error occurred:\n\n{str(e)}")

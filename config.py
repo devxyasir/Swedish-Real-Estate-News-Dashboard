@@ -6,14 +6,22 @@ Defines data storage location and other settings
 from pathlib import Path
 import os
 
-# Get user's Documents folder (cross-platform)
-if os.name == 'nt':  # Windows
-    DOCUMENTS_PATH = Path(os.path.expanduser("~")) / "Documents"
-else:  # macOS/Linux
-    DOCUMENTS_PATH = Path.home() / "Documents"
+# Check if running on PythonAnywhere
+def is_pythonanywhere():
+    return 'pythonanywhere.com' in os.getenv('HTTP_HOST', '')
 
-# Create News Dashboard data directory
-DATA_DIR = DOCUMENTS_PATH / "News Dashboard Data"
+# Get the appropriate data directory
+if is_pythonanywhere():
+    # On PythonAnywhere, use the project directory
+    DATA_DIR = Path(__file__).parent / "data"
+else:
+    # Local development - use Documents folder
+    if os.name == 'nt':  # Windows
+        DOCUMENTS_PATH = Path(os.path.expanduser("~")) / "Documents"
+    else:  # macOS/Linux
+        DOCUMENTS_PATH = Path.home() / "Documents"
+    
+    DATA_DIR = DOCUMENTS_PATH / "News Dashboard Data"
 
 # Ensure directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -38,4 +46,7 @@ def ensure_data_directory():
     """Ensure data directory exists"""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     return DATA_DIR
+
+# Ensure data directory exists on import
+ensure_data_directory()
 
