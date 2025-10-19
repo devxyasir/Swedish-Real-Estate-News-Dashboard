@@ -222,7 +222,7 @@ def _scrape_worker():
         progress.current_page = 5
         progress.message = "Checking Fastighetsnytt for new articles..."
         eel.update_scraping_progress(progress.__dict__)()
-            
+        
         new_count_5 = _run_fastighetsnytt_scrape()
         total_new_articles += new_count_5
         progress.sources_completed.append("Fastighetsnytt")
@@ -232,7 +232,7 @@ def _scrape_worker():
         progress.current_page = 6
         progress.message = "Checking Nordic Property News for new articles..."
         eel.update_scraping_progress(progress.__dict__)()
-            
+        
         new_count_6 = _run_nordicpropertynews_scrape()
         total_new_articles += new_count_6
         progress.sources_completed.append("Nordic Property News")
@@ -852,143 +852,17 @@ def open_data_folder(folder_path):
         return {'success': False, 'error': str(e)}
 
 
-def find_available_port(start_port=8080, max_attempts=10):
-    """Find an available port starting from start_port"""
-    import socket
-    
-    for port in range(start_port, start_port + max_attempts):
-        try:
-            # Try to bind to the port
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('localhost', port))
-                logger.info(f"Found available port: {port}")
-                return port
-        except OSError:
-            logger.debug(f"Port {port} is in use, trying next...")
-            continue
-    
-    # If no port found, return None
-    logger.error(f"Could not find available port in range {start_port}-{start_port + max_attempts}")
-    return None
-
-
-# Create Flask app for PythonAnywhere
-app = None
-
-def create_app():
-    """Create Flask application for PythonAnywhere"""
-    global app
-    if app is None:
-        from flask import Flask, send_from_directory, jsonify, request
-        
-        app = Flask(__name__, static_folder='web', static_url_path='')
-        
-        # Flask routes
-        @app.route('/')
-        def index():
-            return send_from_directory('web', 'index.html')
-        
-        @app.route('/<path:filename>')
-        def static_files(filename):
-            return send_from_directory('web', filename)
-        
-        # API routes for Eel functions
-        @app.route('/api/check_for_new_articles', methods=['POST'])
-        def api_check_for_new_articles():
-            try:
-                # Call the existing function for full scraping
-                result = check_for_new_articles()
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"API error: {e}")
-                return jsonify({'success': False, 'error': str(e)})
-        
-        @app.route('/api/get_articles', methods=['GET'])
-        def api_get_articles():
-            try:
-                source = request.args.get('source', 'all')
-                page = int(request.args.get('page', 1))
-                search = request.args.get('search', '')
-                
-                # Call the existing function with correct parameter order
-                result = get_articles(source, search, page, 20)
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"API error: {e}")
-                return jsonify({'success': False, 'error': str(e)})
-        
-        # Data location functionality removed
-    
-    return app
-
-
 def main():
     """Main application entry point"""
-    import os
-    import sys
-    
     try:
         logger.info("Starting Real Estate News Hub...")
         
-        # Check if running on PythonAnywhere
-        if 'pythonanywhere.com' in os.getenv('HTTP_HOST', ''):
-            logger.info("Detected PythonAnywhere environment - using Eel web mode")
-            # For PythonAnywhere, just initialize Eel and let WSGI handle it
-            eel.init('web')
-            return
+        # Start the Eel application
+        eel.start('index.html', size=(1200, 800), port=8080)
         
-        # Get host and port from environment variables or use defaults
-        host = os.getenv('HOST', '0.0.0.0')  # Bind to all interfaces for external access
-        port = int(os.getenv('PORT', 8080))
-        
-        # For server deployment, use web mode instead of chrome-app
-        mode = 'web' if os.getenv('SERVER_MODE', 'false').lower() == 'true' else 'chrome-app'
-        
-        logger.info(f"Starting application on {host}:{port} in {mode} mode")
-        
-        if mode == 'web':
-            # Web server mode - accessible via IP/domain
-            eel.start('index.html', host=host, port=port, mode='web', 
-                     block=False, shutdown_delay=1.0)
-            logger.info(f"🌐 Server is running at: http://{host}:{port}")
-            logger.info("Press Ctrl+C to stop the server")
-            
-            # Keep the server running
-            try:
-                import time
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                logger.info("Server stopped by user")
-        else:
-            # Desktop mode (original behavior)
-            eel.start('index.html', size=(1200, 800), port=port, mode='chrome-app', 
-                     close_callback=lambda *args: None, 
-                     cmdline_args=['--disable-web-security', '--disable-features=VizDisplayCompositor'])
-        
-    except KeyboardInterrupt:
-        logger.info("Application closed by user")
     except Exception as e:
         logger.error(f"Application error: {e}", exc_info=True)
-        if 'mode' in locals() and mode == 'web':
-            logger.error("Server failed to start. Check if port is available.")
-        else:
-            show_error_dialog("Application Error", f"An error occurred:\n\n{str(e)}")
-
-
-def show_error_dialog(title, message):
-    """Show error dialog (works in windowed mode)"""
-    try:
-        import tkinter as tk
-        from tkinter import messagebox
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror(title, message)
-        root.destroy()
-    except Exception as dialog_error:
-        # If tkinter not available or fails, just log
-        logger.error(f"Could not show error dialog: {dialog_error}")
-        pass
+        input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

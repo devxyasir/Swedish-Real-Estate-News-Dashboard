@@ -6,14 +6,20 @@ Defines data storage location and other settings
 from pathlib import Path
 import os
 
-# Always use the project directory for data storage
-DATA_DIR = Path(__file__).parent / "data"
+# Get user's Documents folder (cross-platform)
+if os.name == 'nt':  # Windows
+    DOCUMENTS_PATH = Path(os.path.expanduser("~")) / "Documents"
+else:  # macOS/Linux
+    DOCUMENTS_PATH = Path.home() / "Documents"
+
+# Create News Dashboard data directory
+DATA_DIR = DOCUMENTS_PATH / "News Dashboard Data"
 
 # Ensure directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Data file paths
-FASTIGHETSVARLDEN_DATA_FILE = DATA_DIR / "fastighet_news_data.json"
+FASTIGHETSVARLDEN_DATA_FILE = DATA_DIR / "news_data.json"
 CISION_DATA_FILE = DATA_DIR / "cision_news_data.json"
 LOKALGUIDEN_DATA_FILE = DATA_DIR / "lokalguiden_news_data.json"
 DI_DATA_FILE = DATA_DIR / "di_news_data.json"
@@ -32,7 +38,4 @@ def ensure_data_directory():
     """Ensure data directory exists"""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     return DATA_DIR
-
-# Ensure data directory exists on import
-ensure_data_directory()
 
