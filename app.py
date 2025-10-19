@@ -221,8 +221,8 @@ def _scrape_worker():
         progress.current_source = "Fastighetsnytt"
         progress.current_page = 5
         progress.message = "Checking Fastighetsnytt for new articles..."
-        eel.update_scraping_progress(progress.__dict__)()
-        
+            eel.update_scraping_progress(progress.__dict__)()
+            
         new_count_5 = _run_fastighetsnytt_scrape()
         total_new_articles += new_count_5
         progress.sources_completed.append("Fastighetsnytt")
@@ -231,8 +231,8 @@ def _scrape_worker():
         progress.current_source = "Nordic Property News"
         progress.current_page = 6
         progress.message = "Checking Nordic Property News for new articles..."
-        eel.update_scraping_progress(progress.__dict__)()
-        
+            eel.update_scraping_progress(progress.__dict__)()
+            
         new_count_6 = _run_nordicpropertynews_scrape()
         total_new_articles += new_count_6
         progress.sources_completed.append("Nordic Property News")
@@ -347,7 +347,7 @@ def _run_fastighetsvarlden_scrape():
     
     try:
         scraper = FastighetsVarldenScraper()
-        new_articles_count = 0
+    new_articles_count = 0
         
         html = scraper._fetch_page(1)
         if not html:
@@ -519,7 +519,7 @@ def _run_fastighetsnytt_scrape():
                 logger.info(f"New Fastighetsnytt article: {translated_title}")
         
         scraper.articles_data['last_scrape'] = datetime.now().isoformat()
-        scraper._save_data()
+    scraper._save_data()
         
         logger.info(f"Fastighetsnytt: {new_articles_count} new articles")
         return new_articles_count
@@ -896,6 +896,7 @@ def create_app():
         @app.route('/api/check_for_new_articles', methods=['POST'])
         def api_check_for_new_articles():
             try:
+                # Call the existing function
                 result = check_for_new_articles()
                 return jsonify(result)
             except Exception as e:
@@ -909,29 +910,14 @@ def create_app():
                 page = int(request.args.get('page', 1))
                 search = request.args.get('search', '')
                 
+                # Call the existing function
                 result = get_articles(source, page, search)
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"API error: {e}")
                 return jsonify({'success': False, 'error': str(e)})
         
-        @app.route('/api/get_data_location', methods=['GET'])
-        def api_get_data_location():
-            try:
-                result = get_data_location()
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"API error: {e}")
-                return jsonify({'success': False, 'error': str(e)})
-        
-        @app.route('/api/open_data_folder', methods=['POST'])
-        def api_open_data_folder():
-            try:
-                result = open_data_folder()
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"API error: {e}")
-                return jsonify({'success': False, 'error': str(e)})
+        # Data location functionality removed
     
     return app
 

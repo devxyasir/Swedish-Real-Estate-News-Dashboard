@@ -21,8 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function initializeApp() {
     try {
-        // Load data location
-        await loadDataLocation();
+        // Data location removed from UI
         
         // Always load articles first
         await loadArticles();
@@ -58,20 +57,7 @@ async function loadDataLocation() {
     }
 }
 
-/**
- * Open data folder in file explorer
- */
-async function openDataFolder() {
-    try {
-        const response = await fetch('/api/get_data_location');
-        const result = await response.json();
-        const dataPath = result.success ? result.data_path : 'Unknown';
-        await fetch('/api/open_data_folder', { method: 'POST' });
-    } catch (error) {
-        console.error('Failed to open data folder:', error);
-        showError('Unable to open data folder');
-    }
-}
+// Open data folder functionality removed
 
 /**
  * Show scraping sidebar
