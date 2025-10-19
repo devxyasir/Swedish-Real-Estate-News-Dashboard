@@ -7,7 +7,7 @@ import os
 import sys
 
 # Add the project directory to Python path
-project_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = '/home/plazza12/Swedish-Real-Estate-News-Dashboard'
 if project_dir not in sys.path:
     sys.path.append(project_dir)
 
