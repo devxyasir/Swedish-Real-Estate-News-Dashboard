@@ -874,29 +874,49 @@ def find_available_port(start_port=8080, max_attempts=10):
 
 def main():
     """Main application entry point"""
+    import os
+    import sys
+    
     try:
-        logger.info("Starting Real Estate News Hub...")
+        logger.info("Starting Real Estate News Hub Web Server...")
         
-        # Find an available port
-        port = find_available_port()
+        # Get host and port from environment variables or use defaults
+        host = os.getenv('HOST', '0.0.0.0')  # Bind to all interfaces for external access
+        port = int(os.getenv('PORT', 8080))
         
-        if port is None:
-            error_msg = "Could not find an available port. Please close other instances of the application."
-            logger.error(error_msg)
-            show_error_dialog("Port Error", error_msg)
-            return
+        # For server deployment, use web mode instead of chrome-app
+        mode = 'web' if os.getenv('SERVER_MODE', 'false').lower() == 'true' else 'chrome-app'
         
-        # Start the Eel application with the available port
-        logger.info(f"Starting application on port {port}")
-        eel.start('index.html', size=(1200, 800), port=port, mode='chrome-app', 
-                 close_callback=lambda *args: None, 
-                 cmdline_args=['--disable-web-security', '--disable-features=VizDisplayCompositor'])
+        logger.info(f"Starting application on {host}:{port} in {mode} mode")
+        
+        if mode == 'web':
+            # Web server mode - accessible via IP/domain
+            eel.start('index.html', host=host, port=port, mode='web', 
+                     block=False, shutdown_delay=1.0)
+            logger.info(f"🌐 Server is running at: http://{host}:{port}")
+            logger.info("Press Ctrl+C to stop the server")
+            
+            # Keep the server running
+            try:
+                import time
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                logger.info("Server stopped by user")
+        else:
+            # Desktop mode (original behavior)
+            eel.start('index.html', size=(1200, 800), port=port, mode='chrome-app', 
+                     close_callback=lambda *args: None, 
+                     cmdline_args=['--disable-web-security', '--disable-features=VizDisplayCompositor'])
         
     except KeyboardInterrupt:
         logger.info("Application closed by user")
     except Exception as e:
         logger.error(f"Application error: {e}", exc_info=True)
-        show_error_dialog("Application Error", f"An error occurred:\n\n{str(e)}")
+        if mode == 'web':
+            logger.error("Server failed to start. Check if port is available.")
+        else:
+            show_error_dialog("Application Error", f"An error occurred:\n\n{str(e)}")
 
 
 def show_error_dialog(title, message):
