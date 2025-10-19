@@ -948,9 +948,10 @@ def main():
         
         # Check if running on PythonAnywhere
         if 'pythonanywhere.com' in os.getenv('HTTP_HOST', ''):
-            logger.info("Detected PythonAnywhere environment")
-            # For PythonAnywhere, we'll use the Flask app
-            return create_app()
+            logger.info("Detected PythonAnywhere environment - using Eel web mode")
+            # For PythonAnywhere, just initialize Eel and let WSGI handle it
+            eel.init('web')
+            return
         
         # Get host and port from environment variables or use defaults
         host = os.getenv('HOST', '0.0.0.0')  # Bind to all interfaces for external access
